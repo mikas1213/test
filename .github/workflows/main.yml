@@ -1,74 +1,74 @@
 name: Deploy Jaustis to AWS
 on:
-  push:
-    branches: [ main ]
+    push:
+        branches: [main]
 jobs:
-  deploy-staging:
-    runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[staging]')
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '22'
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Build React app
-      run: npm run build
-      
-    - name: Deploy to staging
-      uses: appleboy/scp-action@v0.1.4
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        source: "dist/*"
-        target: "/var/www/jaustis/staging/"
-        
-    # - name: Restart nginx
-    #   uses: appleboy/ssh-action@v0.1.5
-    #   with:
-    #     host: ${{ secrets.SERVER_HOST }}
-    #     username: ${{ secrets.SERVER_USER }}
-    #     key: ${{ secrets.SERVER_SSH_KEY }}
-    #     script: |
-    #       sudo systemctl restart nginx
-          
-  deploy-production:
-    runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[production]')
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '22'
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Build React app
-      run: npm run build
-      
-    - name: Deploy to production
-      uses: appleboy/scp-action@v0.1.4
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        source: "dist/*"
-        target: "/var/www/jaustis/production/"
-        
-    - name: Restart nginx
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        script: |
-          sudo systemctl restart nginx
+    deploy-staging:
+        runs-on: ubuntu-latest
+        if: contains(github.event.head_commit.message, '[dev]')
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: '22'
+
+            - name: Install dependencies
+              run: npm install
+
+            - name: Build React app
+              run: npm run build
+
+            - name: Deploy to staging
+              uses: appleboy/scp-action@v0.1.4
+              with:
+                  host: ${{ secrets.DEV_SERVER_HOST }}
+                  username: ${{ secrets.DEV_SERVER_USER }}
+                  key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+                  source: 'dist/*'
+                  target: '/var/www/jaustis/frontend/'
+
+        # - name: Restart nginx
+        #   uses: appleboy/ssh-action@v0.1.5
+        #   with:
+        #     host: ${{ secrets.DEV_SERVER_HOST }}
+        #     username: ${{ secrets.DEV_SERVER_USER }}
+        #     key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+        #     script: |
+        #       sudo systemctl restart nginx
+
+    deploy-production:
+        runs-on: ubuntu-latest
+        if: contains(github.event.head_commit.message, '[production]')
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: '22'
+
+            - name: Install dependencies
+              run: npm install
+
+            - name: Build React app
+              run: npm run build
+
+            - name: Deploy to production
+              uses: appleboy/scp-action@v0.1.4
+              with:
+                  host: ${{ secrets.SERVER_HOST }}
+                  username: ${{ secrets.SERVER_USER }}
+                  key: ${{ secrets.SERVER_SSH_KEY }}
+                  source: 'dist/*'
+                  target: '/var/www/jaustis/production/'
+
+            - name: Restart nginx
+              uses: appleboy/ssh-action@v0.1.5
+              with:
+                  host: ${{ secrets.SERVER_HOST }}
+                  username: ${{ secrets.SERVER_USER }}
+                  key: ${{ secrets.SERVER_SSH_KEY }}
+                  script: |
+                      sudo systemctl restart nginx
