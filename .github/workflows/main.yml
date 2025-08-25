@@ -3,7 +3,7 @@ on:
     push:
         branches: [main]
 jobs:
-    deploy-staging:
+    deploy-dev:
         runs-on: ubuntu-latest
         if: contains(github.event.head_commit.message, '[dev]')
         steps:
@@ -20,7 +20,7 @@ jobs:
             - name: Build React app
               run: npm run build
 
-            - name: Deploy to staging
+            - name: Deploy to dev
               uses: appleboy/scp-action@v0.1.4
               with:
                   host: ${{ secrets.DEV_SERVER_HOST }}
@@ -40,7 +40,7 @@ jobs:
 
     deploy-production:
         runs-on: ubuntu-latest
-        if: contains(github.event.head_commit.message, '[production]')
+        if: contains(github.event.head_commit.message, '[prod]')
         steps:
             - uses: actions/checkout@v3
 
@@ -62,7 +62,7 @@ jobs:
                   username: ${{ secrets.SERVER_USER }}
                   key: ${{ secrets.SERVER_SSH_KEY }}
                   source: 'dist/*'
-                  target: '/var/www/jaustis/production/'
+                  target: '/var/www/jaustis/frontend/'
 
             - name: Restart nginx
               uses: appleboy/ssh-action@v0.1.5
