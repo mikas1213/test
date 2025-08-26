@@ -71,7 +71,7 @@ jobs:
                   username: ${{ secrets.SERVER_USER }}
                   key: ${{ secrets.SERVER_SSH_KEY }}
                   source: 'dist/*'
-                  target: '/var/www/jaustis/frontend/'
+                  target: ${{ vars.TARGET_PATH }}
 
             - name: Restart nginx
               uses: appleboy/ssh-action@v0.1.5
@@ -101,7 +101,7 @@ jobs:
                   username: ${{ secrets.PROD_SERVER_USER }}
                   key: ${{ secrets.PROD_SERVER_SSH_KEY }}
                   source: 'dist/*'
-                  target: '/var/www/jaustis-demo/frontend/'
+                  target: ${{ vars.DEMO_TARGET_PATH }}
 
     # DEV serveris - development aplikacija
     deploy-dev:
@@ -122,7 +122,7 @@ jobs:
                   username: ${{ secrets.DEV_SERVER_USER }}
                   key: ${{ secrets.DEV_SERVER_SSH_KEY }}
                   source: 'dist/*'
-                  target: '/var/www/jaustis/frontend/'
+                  target: ${{ vars.TARGET_PATH }}
 
     # DEV serveris - demo versija
     deploy-demo-dev:
@@ -143,4 +143,4 @@ jobs:
                   username: ${{ secrets.DEV_SERVER_USER }}
                   key: ${{ secrets.DEV_SERVER_SSH_KEY }}
                   source: 'dist/*'
-                  target: '/var/www/jaustis-demo/frontend/'
+                  target: ${{ vars.DEMO_TARGET_PATH }}
