@@ -2,6 +2,12 @@ name: Deploy Jaustis to AWS
 on:
     push:
         branches: [main]
+        # Ignoruoja push jei keičiasi tik dokumentacija
+        paths-ignore:
+            - 'README.md'
+            - '*.md'
+            - 'docs/**'
+
 jobs:
     deploy-dev:
         runs-on: ubuntu-latest
@@ -13,11 +19,35 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: '22'
+                  # Automatiškai naudoja NPM cache
+                  cache: 'npm'
 
+            # Cache node_modules directory
+            - name: Cache node modules
+              uses: actions/cache@v3
+              id: cache-nodemodules
+              with:
+                  path: node_modules
+                  key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+                  restore-keys: |
+                      ${{ runner.os }}-node-
+
+            # Install tik jei cache nerastas
             - name: Install dependencies
-              run: npm install
+              if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+              run: npm ci
 
+            # Cache build directory
+            - name: Cache build
+              uses: actions/cache@v3
+              id: cache-build
+              with:
+                  path: dist
+                  key: build-${{ github.sha }}
+
+            # Build tik jei build cache nerastas
             - name: Build React app
+              if: steps.cache-build.outputs.cache-hit != 'true'
               run: npm run build
 
             - name: Deploy to dev
@@ -29,15 +59,6 @@ jobs:
                   source: 'dist/*'
                   target: '/var/www/jaustis/frontend/'
 
-        # - name: Restart nginx
-        #   uses: appleboy/ssh-action@v0.1.5
-        #   with:
-        #     host: ${{ secrets.DEV_SERVER_HOST }}
-        #     username: ${{ secrets.DEV_SERVER_USER }}
-        #     key: ${{ secrets.DEV_SERVER_SSH_KEY }}
-        #     script: |
-        #       sudo systemctl restart nginx
-
     deploy-production:
         runs-on: ubuntu-latest
         if: contains(github.event.head_commit.message, '[prod]')
@@ -48,11 +69,30 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: '22'
+                  cache: 'npm'
+
+            - name: Cache node modules
+              uses: actions/cache@v3
+              id: cache-nodemodules-prod
+              with:
+                  path: node_modules
+                  key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+                  restore-keys: |
+                      ${{ runner.os }}-node-
 
             - name: Install dependencies
-              run: npm install
+              if: steps.cache-nodemodules-prod.outputs.cache-hit != 'true'
+              run: npm ci
+
+            - name: Cache build
+              uses: actions/cache@v3
+              id: cache-build-prod
+              with:
+                  path: dist
+                  key: build-${{ github.sha }}
 
             - name: Build React app
+              if: steps.cache-build-prod.outputs.cache-hit != 'true'
               run: npm run build
 
             - name: Deploy to production
