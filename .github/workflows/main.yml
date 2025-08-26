@@ -1,17 +1,17 @@
 name: Deploy Jaustis to AWS
 on:
     push:
-        branches: [main]
-        # Ignoruoja push jei keičiasi tik dokumentacija
+        branches: [main, demo]
         paths-ignore:
             - 'README.md'
             - '*.md'
             - 'docs/**'
 
 jobs:
-    deploy-dev:
+    # Bendras build job visoms aplinkoms
+    build:
         runs-on: ubuntu-latest
-        if: contains(github.event.head_commit.message, '[dev]')
+        if: contains(github.event.head_commit.message, '[demo-prod]') || contains(github.event.head_commit.message, '[demo-dev]') || contains(github.event.head_commit.message, '[dev]') || contains(github.event.head_commit.message, '[prod]')
         steps:
             - uses: actions/checkout@v3
 
@@ -19,10 +19,8 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: '22'
-                  # Automatiškai naudoja NPM cache
                   cache: 'npm'
 
-            # Cache node_modules directory
             - name: Cache node modules
               uses: actions/cache@v3
               id: cache-nodemodules
@@ -32,12 +30,10 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-node-
 
-            # Install tik jei cache nerastas
             - name: Install dependencies
               if: steps.cache-nodemodules.outputs.cache-hit != 'true'
               run: npm ci
 
-            # Cache build directory
             - name: Cache build
               uses: actions/cache@v3
               id: cache-build
@@ -45,70 +41,83 @@ jobs:
                   path: dist
                   key: build-${{ github.sha }}
 
-            # Build tik jei build cache nerastas
             - name: Build React app
               if: steps.cache-build.outputs.cache-hit != 'true'
               run: npm run build
 
-            - name: Deploy to dev
-              uses: appleboy/scp-action@v0.1.4
+            # Upload build rezultatą kitiems job'ams
+            - name: Upload build artifacts
+              uses: actions/upload-artifact@v3
               with:
-                  host: ${{ secrets.DEV_SERVER_HOST }}
-                  username: ${{ secrets.DEV_SERVER_USER }}
-                  key: ${{ secrets.DEV_SERVER_SSH_KEY }}
-                  source: 'dist/*'
-                  target: '/var/www/jaustis/frontend/'
+                  name: dist-files
+                  path: dist/
 
-    deploy-production:
+    # Deploy job'ai naudoja build rezultatus
+    deploy:
         runs-on: ubuntu-latest
-        if: contains(github.event.head_commit.message, '[prod]')
+        needs: build
+        strategy:
+            matrix:
+                include:
+                    # PROD serveris - production aplikacija
+                    - environment: prod
+                      condition: contains(github.event.head_commit.message, '[prod]')
+                      host_secret: SERVER_HOST
+                      user_secret: SERVER_USER
+                      key_secret: SERVER_SSH_KEY
+                      target_path: '/var/www/jaustis/frontend/'
+                      restart_nginx: true
+
+                    # PROD serveris - demo versija
+                    - environment: demo-prod
+                      condition: contains(github.event.head_commit.message, '[demo-prod]')
+                      host_secret: SERVER_HOST
+                      user_secret: SERVER_USER
+                      key_secret: SERVER_SSH_KEY
+                      target_path: '/var/www/jaustis-demo/frontend/'
+                      restart_nginx: false
+
+                    # DEV serveris - development aplikacija
+                    - environment: dev
+                      condition: contains(github.event.head_commit.message, '[dev]')
+                      host_secret: DEV_SERVER_HOST
+                      user_secret: DEV_SERVER_USER
+                      key_secret: DEV_SERVER_SSH_KEY
+                      target_path: '/var/www/jaustis/frontend/'
+                      restart_nginx: false
+
+                    # DEV serveris - demo versija
+                    - environment: demo-dev
+                      condition: contains(github.event.head_commit.message, '[demo-dev]')
+                      host_secret: DEV_SERVER_HOST
+                      user_secret: DEV_SERVER_USER
+                      key_secret: DEV_SERVER_SSH_KEY
+                      target_path: '/var/www/jaustis-demo/frontend/'
+                      restart_nginx: false
+
+        if: ${{ matrix.condition }}
         steps:
-            - uses: actions/checkout@v3
-
-            - name: Setup Node.js
-              uses: actions/setup-node@v3
+            - name: Download build artifacts
+              uses: actions/download-artifact@v3
               with:
-                  node-version: '22'
-                  cache: 'npm'
+                  name: dist-files
+                  path: dist/
 
-            - name: Cache node modules
-              uses: actions/cache@v3
-              id: cache-nodemodules-prod
-              with:
-                  path: node_modules
-                  key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-                  restore-keys: |
-                      ${{ runner.os }}-node-
-
-            - name: Install dependencies
-              if: steps.cache-nodemodules-prod.outputs.cache-hit != 'true'
-              run: npm ci
-
-            - name: Cache build
-              uses: actions/cache@v3
-              id: cache-build-prod
-              with:
-                  path: dist
-                  key: build-${{ github.sha }}
-
-            - name: Build React app
-              if: steps.cache-build-prod.outputs.cache-hit != 'true'
-              run: npm run build
-
-            - name: Deploy to production
+            - name: Deploy to ${{ matrix.environment }}
               uses: appleboy/scp-action@v0.1.4
               with:
-                  host: ${{ secrets.SERVER_HOST }}
-                  username: ${{ secrets.SERVER_USER }}
-                  key: ${{ secrets.SERVER_SSH_KEY }}
+                  host: ${{ secrets[matrix.host_secret] }}
+                  username: ${{ secrets[matrix.user_secret] }}
+                  key: ${{ secrets[matrix.key_secret] }}
                   source: 'dist/*'
-                  target: '/var/www/jaustis/frontend/'
+                  target: ${{ matrix.target_path }}
 
             - name: Restart nginx
+              if: matrix.restart_nginx
               uses: appleboy/ssh-action@v0.1.5
               with:
-                  host: ${{ secrets.SERVER_HOST }}
-                  username: ${{ secrets.SERVER_USER }}
-                  key: ${{ secrets.SERVER_SSH_KEY }}
+                  host: ${{ secrets[matrix.host_secret] }}
+                  username: ${{ secrets[matrix.user_secret] }}
+                  key: ${{ secrets[matrix.key_secret] }}
                   script: |
                       sudo systemctl restart nginx
