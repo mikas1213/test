@@ -52,50 +52,11 @@ jobs:
                   name: dist-files
                   path: dist/
 
-    # Deploy job'ai naudoja build rezultatus
-    deploy:
+    # PROD serveris - production aplikacija
+    deploy-prod:
         runs-on: ubuntu-latest
         needs: build
-        strategy:
-            matrix:
-                include:
-                    # PROD serveris - production aplikacija
-                    - environment: prod
-                      condition: contains(github.event.head_commit.message, '[prod]')
-                      host_secret: SERVER_HOST
-                      user_secret: SERVER_USER
-                      key_secret: SERVER_SSH_KEY
-                      target_path: '/var/www/jaustis/frontend/'
-                      restart_nginx: true
-
-                    # PROD serveris - demo versija
-                    - environment: demo-prod
-                      condition: contains(github.event.head_commit.message, '[demo-prod]')
-                      host_secret: SERVER_HOST
-                      user_secret: SERVER_USER
-                      key_secret: SERVER_SSH_KEY
-                      target_path: '/var/www/jaustis-demo/frontend/'
-                      restart_nginx: false
-
-                    # DEV serveris - development aplikacija
-                    - environment: dev
-                      condition: contains(github.event.head_commit.message, '[dev]')
-                      host_secret: DEV_SERVER_HOST
-                      user_secret: DEV_SERVER_USER
-                      key_secret: DEV_SERVER_SSH_KEY
-                      target_path: '/var/www/jaustis/frontend/'
-                      restart_nginx: false
-
-                    # DEV serveris - demo versija
-                    - environment: demo-dev
-                      condition: contains(github.event.head_commit.message, '[demo-dev]')
-                      host_secret: DEV_SERVER_HOST
-                      user_secret: DEV_SERVER_USER
-                      key_secret: DEV_SERVER_SSH_KEY
-                      target_path: '/var/www/jaustis-demo/frontend/'
-                      restart_nginx: false
-
-        if: ${{ matrix.condition }}
+        if: contains(github.event.head_commit.message, '[prod]')
         steps:
             - name: Download build artifacts
               uses: actions/download-artifact@v3
@@ -103,21 +64,83 @@ jobs:
                   name: dist-files
                   path: dist/
 
-            - name: Deploy to ${{ matrix.environment }}
+            - name: Deploy to production
               uses: appleboy/scp-action@v0.1.4
               with:
-                  host: ${{ secrets[matrix.host_secret] }}
-                  username: ${{ secrets[matrix.user_secret] }}
-                  key: ${{ secrets[matrix.key_secret] }}
+                  host: ${{ secrets.SERVER_HOST }}
+                  username: ${{ secrets.SERVER_USER }}
+                  key: ${{ secrets.SERVER_SSH_KEY }}
                   source: 'dist/*'
-                  target: ${{ matrix.target_path }}
+                  target: '/var/www/jaustis/frontend/'
 
             - name: Restart nginx
-              if: matrix.restart_nginx
               uses: appleboy/ssh-action@v0.1.5
               with:
-                  host: ${{ secrets[matrix.host_secret] }}
-                  username: ${{ secrets[matrix.user_secret] }}
-                  key: ${{ secrets[matrix.key_secret] }}
+                  host: ${{ secrets.SERVER_HOST }}
+                  username: ${{ secrets.SERVER_USER }}
+                  key: ${{ secrets.SERVER_SSH_KEY }}
                   script: |
                       sudo systemctl restart nginx
+
+    # PROD serveris - demo versija
+    deploy-demo-prod:
+        runs-on: ubuntu-latest
+        needs: build
+        if: contains(github.event.head_commit.message, '[demo-prod]')
+        steps:
+            - name: Download build artifacts
+              uses: actions/download-artifact@v3
+              with:
+                  name: dist-files
+                  path: dist/
+
+            - name: Deploy to demo-prod
+              uses: appleboy/scp-action@v0.1.4
+              with:
+                  host: ${{ secrets.PROD_SERVER_HOST }}
+                  username: ${{ secrets.PROD_SERVER_USER }}
+                  key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+                  source: 'dist/*'
+                  target: '/var/www/jaustis-demo/frontend/'
+
+    # DEV serveris - development aplikacija
+    deploy-dev:
+        runs-on: ubuntu-latest
+        needs: build
+        if: contains(github.event.head_commit.message, '[dev]')
+        steps:
+            - name: Download build artifacts
+              uses: actions/download-artifact@v3
+              with:
+                  name: dist-files
+                  path: dist/
+
+            - name: Deploy to dev
+              uses: appleboy/scp-action@v0.1.4
+              with:
+                  host: ${{ secrets.DEV_SERVER_HOST }}
+                  username: ${{ secrets.DEV_SERVER_USER }}
+                  key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+                  source: 'dist/*'
+                  target: '/var/www/jaustis/frontend/'
+
+    # DEV serveris - demo versija
+    deploy-demo-dev:
+        runs-on: ubuntu-latest
+        needs: build
+        if: contains(github.event.head_commit.message, '[demo-dev]')
+        steps:
+            - name: Download build artifacts
+              uses: actions/download-artifact@v3
+              with:
+                  name: dist-files
+                  path: dist/
+
+            - name: Deploy to demo-dev
+              uses: appleboy/scp-action@v0.1.4
+              with:
+                  host: ${{ secrets.DEV_SERVER_HOST }}
+                  username: ${{ secrets.DEV_SERVER_USER }}
+                  key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+                  source: 'dist/*'
+                  target: '/var/www/jaustis-demo/frontend/'
