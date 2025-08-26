@@ -1,7 +1,9 @@
+import '../../App.css';
+
 const AdminApp = () => {
     return (
         <>
-            <h3>Admino panelė</h3>
+            <h3 className='admin-class'>Admino panelė</h3>
         </>
     );
 };

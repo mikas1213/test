@@ -1,7 +1,9 @@
+import '../../App.css';
+
 const UserApp = () => {
     return (
         <>
-            <h3>User HOme</h3>
+            <h3 className='mano-class'>User Home</h3>
         </>
     );
 };
