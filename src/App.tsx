@@ -1,10 +1,9 @@
-import { Outlet } from 'react-router';
-import './App.css';
-
 function App() {
+    console.log('\nENV: ', import.meta.env)
+    console.log('Hostname: ', window.location.hostname)
 	return (
 		<>
-			<Outlet />
+			labuka
 		</>
 	);
 }

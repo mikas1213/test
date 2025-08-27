@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 export const NavBar = () => {
+    
 	return (
 		<nav>
 			<ul>
