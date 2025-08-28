@@ -22,6 +22,9 @@ const ClientNavbar = () => {
                 <li>
 					<Link to='/rezervacija'>Rezervacija</Link>
 				</li>
+                <li>
+					<Link to='/articles'>Straipsniai</Link>
+				</li>
 				<li>
 					<Link to={hostpath.adminUrl}>Admin</Link>
 				</li>
