@@ -4,7 +4,7 @@ interface EnvironmentConfig {
 }
 
 const getEnvironmentConfig = (): EnvironmentConfig  => {
-	const hostname = window.location.hostname;
+	const hostname: string = window.location.hostname;
 
 	 const configs: Record<string, EnvironmentConfig> = {
 		// Production
