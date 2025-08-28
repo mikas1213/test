@@ -13,9 +13,6 @@ const ClientNavbar = () => {
 					gap: '10px',
 				}}
 			>
-				{/* <li>
-					<Link to={hostpath.adminUrl}>AdminApp</Link>
-				</li> */}
 				<li>
 					<Link to='/'>Home</Link>
 				</li>
